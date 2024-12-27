@@ -24,7 +24,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build executable
-      run: pyinstaller --noconsole --onefile --name --hidden-import=yt_dlp --hidden-import=tkinter video_downloader main.py
+      run: pyinstaller --noconsole --onefile --hidden-import=yt_dlp --hidden-import=tkinter --name video_downloader main.py
 
     - name: Archive executable
       run: |
