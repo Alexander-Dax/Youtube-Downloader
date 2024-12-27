@@ -18,7 +18,7 @@ class LanguageSelectorApp:
         title_label.pack(pady=10)
 
         # Language Dropdown
-        self.language_var = tk.StringVar(value="English")
+        self.language_var = tk.StringVar(value="Deutsch")
         language_dropdown = ttk.Combobox(
             self.master,
             textvariable=self.language_var,

@@ -1,0 +1,60 @@
+name: Build and Release EXE
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build executable
+      run: pyinstaller --noconsole --onefile --icon=app_icon.ico video_downloader.py
+
+    - name: Archive executable
+      run: |
+        mkdir release
+        move dist\video_downloader.exe release\video_downloader.exe
+      shell: cmd
+
+    - name: Upload EXE as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: video_downloader
+        path: release/video_downloader.exe
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download EXE artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: video_downloader
+
+    - name: Publish Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "video_downloader.exe"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          A new release is available.
+          - Includes the latest changes.
