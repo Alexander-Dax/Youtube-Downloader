@@ -24,7 +24,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build executable
-      run: pyinstaller --noconsole --onefile --icon=app_icon.ico video_downloader.py
+      run: pyinstaller --noconsole --onefile --icon=app_icon.ico --name video_downloader main.py
 
     - name: Archive executable
       run: |
