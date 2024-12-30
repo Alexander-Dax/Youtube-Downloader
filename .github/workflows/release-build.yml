@@ -30,16 +30,16 @@ jobs:
 
     - name: Build application
       run: |
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
           pyinstaller --noconsole --onefile --hidden-import=yt_dlp --hidden-import=yt_dlp.extractor --name video_downloader main.py
-        elif [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "macos-latest" ]]; then
+        else
           pyinstaller --noconsole --onefile --hidden-import=yt_dlp --hidden-import=yt_dlp.extractor --name video_downloader main.py
         fi
 
     - name: Archive executable
       run: |
         mkdir release
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
           mv dist/video_downloader.exe release/video_downloader_windows.exe
         elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
           mv dist/video_downloader release/video_downloader_linux
