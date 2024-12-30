@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
-    
+
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -26,55 +26,61 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pyinstaller
 
     - name: Build application
       shell: bash
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
           pyinstaller --noconsole --onefile --hidden-import=yt_dlp --hidden-import=yt_dlp.extractor --name video_downloader main.py
-        else
+          mv dist/video_downloader.exe video_downloader_windows.exe
+        elif [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
           pyinstaller --noconsole --onefile --hidden-import=yt_dlp --hidden-import=yt_dlp.extractor --name video_downloader main.py
-        fi
-
-    - name: Archive executable
-      shell: bash
-      run: |
-        mkdir release
-        if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          mv dist/video_downloader.exe release/video_downloader_windows.exe
-        elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-          mv dist/video_downloader release/video_downloader_linux
-        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-          mv dist/video_downloader release/video_downloader_macos
+          mv dist/video_downloader video_downloader_linux
+        elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+          pyinstaller --noconsole --onefile --hidden-import=yt_dlp --hidden-import=yt_dlp.extractor --name video_downloader main.py
+          mv dist/video_downloader video_downloader_macos
         fi
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: video_downloader_${{ matrix.os }}
-        path: release/
+        path: |
+          video_downloader_windows.exe
+          video_downloader_linux
+          video_downloader_macos
+
 
   release:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-    - name: Download EXE artifact
+    - name: Download Windows artifact
       uses: actions/download-artifact@v4
       with:
-        name: video_downloader_${{ matrix.os }}
+        name: video_downloader_windows-latest
+
+    - name: Download Linux artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: video_downloader_ubuntu-latest
+
+    - name: Download macOS artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: video_downloader_macos-latest
 
     - name: Publish Release
       uses: ncipollo/release-action@v1
       with:
         artifacts: |
-          release/video_downloader_windows.exe,
-          release/video_downloader_linux,
-          release/video_downloader_macos
+          video_downloader_windows.exe,
+          video_downloader_linux,
+          video_downloader_macos
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ github.ref_name }}
         releaseName: Release ${{ github.ref_name }}
         body: |
           A new release is available.
-          - Includes the latest changes.
+          - Includes builds for Windows, Linux, and macOS.
