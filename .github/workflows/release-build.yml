@@ -63,7 +63,7 @@ jobs:
     - name: Download EXE artifact
       uses: actions/download-artifact@v4
       with:
-        name: video_downloader
+        name: video_downloader_${{ matrix.os }}
 
     - name: Publish Release
       uses: ncipollo/release-action@v1
