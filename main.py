@@ -197,9 +197,9 @@ class VideoDownloaderApp:
             quality_option = quality_map[quality]
 
             if format_type == "MP4":
-                command = f'python -m yt-dlp -f "{quality_option}" -o "%(title)s"-{quality}".%(ext)s" "{video_url}"'
+                command = f'yt-dlp -f "{quality_option}" -o "%(title)s"-{quality}".%(ext)s" "{video_url}"'
             elif format_type == "MP3":
-                command = f'python -m yt-dlp --extract-audio --audio-format mp3 -o "%(title)s.%(ext)s" "{video_url}"'
+                command = f'yt-dlp --extract-audio --audio-format mp3 -o "%(title)s.%(ext)s" "{video_url}"'
 
             # Run yt-dlp command
             subprocess.run(command, shell=True, check=True)
