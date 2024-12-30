@@ -29,6 +29,7 @@ jobs:
         pip install pyinstaller
 
     - name: Build application
+      shell: bash
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
           pyinstaller --noconsole --onefile --hidden-import=yt_dlp --hidden-import=yt_dlp.extractor --name video_downloader main.py
@@ -37,6 +38,7 @@ jobs:
         fi
 
     - name: Archive executable
+      shell: bash
       run: |
         mkdir release
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
