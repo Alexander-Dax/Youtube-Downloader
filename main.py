@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import subprocess
+from yt_dlp import YoutubeDL
 import threading
 
 
@@ -195,19 +195,26 @@ class VideoDownloaderApp:
                 "Lowest": "worst[ext=mp4]",
             }
             quality_option = quality_map[quality]
+            
+            # Set yt-dlp options
+            ydl_opts = {
+                'format': quality_option,
+                'outtmpl': f'%(title)s-{quality}.%(ext)s' if format_type == "MP4" else '%(title)s.%(ext)s',
+                'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}] if format_type == "MP3" else [],
+                'quiet': False,  # Change to True to suppress console output
+            }
 
-            if format_type == "MP4":
-                command = f'yt-dlp -f "{quality_option}" -o "%(title)s"-{quality}".%(ext)s" "{video_url}"'
-            elif format_type == "MP3":
-                command = f'yt-dlp --extract-audio --audio-format mp3 -o "%(title)s.%(ext)s" "{video_url}"'
+            # Download using yt-dlp
+            with YoutubeDL(ydl_opts) as ydl:
+                ydl.download([video_url])
 
-            # Run yt-dlp command
-            subprocess.run(command, shell=True, check=True)
             self.status_label.config(text=self.texts["download_complete"], fg="green")
             messagebox.showinfo(self.texts["success"], self.texts["download_complete"])
-        except subprocess.CalledProcessError:
+
+        except Exception as e:
             self.status_label.config(text=self.texts["download_failed"], fg="red")
-            messagebox.showerror(self.texts["error"], self.texts["download_error"])
+            messagebox.showerror(self.texts["error"], f"Failed to download the video: {str(e)}")
+
 
 
 # Start with the language selector
