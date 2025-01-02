@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from yt_dlp import YoutubeDL
 import threading
+import certifi
 
 
 class LanguageSelectorApp:
@@ -195,13 +196,14 @@ class VideoDownloaderApp:
                 "Lowest": "worst[ext=mp4]",
             }
             quality_option = quality_map[quality]
-            
+
             # Set yt-dlp options
             ydl_opts = {
                 'format': quality_option,
                 'outtmpl': f'%(title)s-{quality}.%(ext)s' if format_type == "MP4" else '%(title)s.%(ext)s',
                 'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}] if format_type == "MP3" else [],
                 'quiet': False,  # Change to True to suppress console output
+                'ca_bundle': certifi.where()
             }
 
             # Download using yt-dlp
