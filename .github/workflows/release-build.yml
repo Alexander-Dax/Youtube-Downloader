@@ -31,14 +31,19 @@ jobs:
     - name: Locate certifi CA bundle
       id: certifi
       run: |
-        echo "CERTIFI_CA_BUNDLE=$(python -m certifi)" >> $GITHUB_ENV
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          CERTIFI_PATH=$(python -m certifi | sed 's|\\|/|g')
+          echo "CERTIFI_CA_BUNDLE=$CERTIFI_PATH" >> $GITHUB_ENV
+        else
+          echo "CERTIFI_CA_BUNDLE=$(python -m certifi)" >> $GITHUB_ENV
+        fi
 
     - name: Build application
       shell: bash
       run: |
         echo "CERTIFI_CA_BUNDLE: $CERTIFI_CA_BUNDLE"
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          pyinstaller --noconsole --onefile --add-data "%CERTIFI_CA_BUNDLE$;certifi" --name video_downloader main.py
+          pyinstaller --noconsole --onefile --add-data "%CERTIFI_CA_BUNDLE%;certifi" --name video_downloader main.py
           mv dist/video_downloader.exe video_downloader_windows.exe
         elif [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
           pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE:certifi" --name video_downloader main.py
