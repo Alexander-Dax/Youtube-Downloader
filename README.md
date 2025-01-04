@@ -8,4 +8,4 @@
 
 </div>
 
-Youtube-Downloader is a simple GUI buil on [yt-dlp](https://github.com/yt-dlp/yt-dlp). yt-dlp is a feature-rich command-line audio/video downloader with support for [thousands of sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
+Youtube-Downloader is a simple GUI built on [yt-dlp](https://github.com/yt-dlp/yt-dlp). yt-dlp is a feature-rich command-line audio/video downloader with support for [thousands of sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
