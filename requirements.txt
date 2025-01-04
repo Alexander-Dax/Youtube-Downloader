@@ -1,5 +1,9 @@
 altgraph==0.17.4
+certifi==2024.12.14
 ffmpeg==1.4
+ffmpeg-python==0.2.0
+future==1.0.0
+imageio-ffmpeg==0.5.1
 packaging==24.2
 pyinstaller==6.11.1
 pyinstaller-hooks-contrib==2024.11
