@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import ffmpeg._utils
 from yt_dlp import YoutubeDL
 import threading
 import certifi
+import imageio_ffmpeg
 
 
 class LanguageSelectorApp:
@@ -197,13 +199,21 @@ class VideoDownloaderApp:
             }
             quality_option = quality_map[quality]
 
+            ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe() # pip-installed ffmpeg binary path
+            print(ffmpeg_path)
+
             # Set yt-dlp options
             ydl_opts = {
                 'format': quality_option,
                 'outtmpl': f'%(title)s-{quality}.%(ext)s' if format_type == "MP4" else '%(title)s.%(ext)s',
-                'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}] if format_type == "MP3" else [],
+                'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192'
+                }] if format_type == "MP3" else [],
                 'quiet': False,  # Change to True to suppress console output
-                'ca_bundle': certifi.where()
+                'ca_bundle': certifi.where(),
+                'ffmpeg_location': ffmpeg_path 
             }
 
             # Download using yt-dlp
