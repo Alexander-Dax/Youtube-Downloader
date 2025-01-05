@@ -68,6 +68,29 @@ class VideoDownloaderApp:
         self.url_entry = ttk.Entry(self.master, width=50, font=("Arial", 10))
         self.url_entry.pack(pady=5)
 
+        # Menu for url right click
+        m=tk.Menu(self.url_entry,tearoff=0)
+        # Define how to paste from clipboard
+        def paste_from_clipboard():
+            self.url_entry.insert(0,master.clipboard_get())
+
+        # Delete current url entry text
+        def delete_url_entry():
+            self.url_entry.delete(0,len(self.url_entry.get()))
+        def close_popup(self,event=None):
+            m.unpost()
+        #add paste and delete options to menu
+        m.add_command(label='Paste',command=paste_from_clipboard)
+        m.add_command(label='Delete', command=delete_url_entry)
+        m.bind('<FocusOut>',close_popup)
+        # ensure Menu pops up on rightclick
+        def do_popup(event):
+            m.tk_popup(event.x_root, event.y_root)
+            m.focus_set()
+
+        self.url_entry.bind("<Button-3>", do_popup)
+
+
         # Format Dropdown
         format_label = tk.Label(self.master, text=self.texts["format_label"], font=("Arial", 12))
         format_label.pack(pady=5)
@@ -103,6 +126,8 @@ class VideoDownloaderApp:
             self.master, text="", font=("Arial", 10), fg="green"
         )
         self.status_label.pack()
+
+
 
     def get_texts(self, language):
         # Define translations for the UI
