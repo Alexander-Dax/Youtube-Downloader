@@ -68,6 +68,29 @@ class VideoDownloaderApp:
         self.url_entry = ttk.Entry(self.master, width=50, font=("Arial", 10))
         self.url_entry.pack(pady=5)
 
+        # Menu for url right click
+        m=tk.Menu(self.url_entry,tearoff=0)
+        # Define how to paste from clipboard
+        def paste_from_clipboard():
+            self.url_entry.insert(0,master.clipboard_get())
+
+        # Delete current url entry text
+        def delete_url_entry():
+            self.url_entry.delete(0,len(self.url_entry.get()))
+        def close_popup(self,event=None):
+            m.unpost()
+        #add paste and delete options to menu
+        m.add_command(label=self.texts['paste'],command=paste_from_clipboard)
+        m.add_command(label=self.texts['delete'], command=delete_url_entry)
+        m.bind('<FocusOut>',close_popup)
+        # ensure Menu pops up on rightclick
+        def do_popup(event):
+            m.tk_popup(event.x_root, event.y_root)
+            m.focus_set()
+
+        self.url_entry.bind("<Button-3>", do_popup)
+
+
         # Format Dropdown
         format_label = tk.Label(self.master, text=self.texts["format_label"], font=("Arial", 12))
         format_label.pack(pady=5)
@@ -104,6 +127,8 @@ class VideoDownloaderApp:
         )
         self.status_label.pack()
 
+
+
     def get_texts(self, language):
         # Define translations for the UI
         translations = {
@@ -121,6 +146,8 @@ class VideoDownloaderApp:
                 "error": "Error",
                 "url_error": "Please enter a video URL.",
                 "download_error": "Failed to download the video. Please check the URL or your internet connection.",
+                "paste": "Paste",
+                "delete": "Delete",
             },
             "Deutsch": {
                 "title": "Video-Downloader",
@@ -136,6 +163,8 @@ class VideoDownloaderApp:
                 "error": "Fehler",
                 "url_error": "Bitte geben Sie eine Video-URL ein.",
                 "download_error": "Das Video konnte nicht heruntergeladen werden. Bitte überprüfen Sie die URL oder Ihre Internetverbindung.",
+                "paste": "Einfügen",
+                "delete": "Löschen",
             },
             "Español": {
                 "title": "Descargador de Videos",
@@ -151,6 +180,8 @@ class VideoDownloaderApp:
                 "error": "Error",
                 "url_error": "Por favor, introduce una URL de video.",
                 "download_error": "No se pudo descargar el video. Verifica la URL o tu conexión a internet.",
+                "paste": "Insertar",
+                "delete": "Eliminar",
             },
             "Français": {
                 "title": "Téléchargeur de Vidéos",
@@ -166,6 +197,8 @@ class VideoDownloaderApp:
                 "error": "Erreur",
                 "url_error": "Veuillez entrer une URL de vidéo.",
                 "download_error": "Impossible de télécharger la vidéo. Vérifiez l'URL ou votre connexion internet.",
+                "paste": "Insérer",
+                "delete": "Supprimer",
             },
         }
         return translations.get(language, translations["English"])
