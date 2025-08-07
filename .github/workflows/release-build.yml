@@ -50,20 +50,34 @@ jobs:
         elif [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
           export QT_QPA_PLATFORM=offscreen
           pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE:certifi" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --name video_downloader main.py
-          mv dist/video_downloader video_downloader_linux
+          mv dist/video_downloader video_downloader_linux.bin
+          chmod +x video_downloader_linux.bin
         elif [ "${{ matrix.os }}" == "macos-latest" ]; then
           pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE:certifi" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --name video_downloader main.py
-          mv dist/video_downloader video_downloader_macos
+          mv dist/video_downloader video_downloader_macos.app
+          chmod +x video_downloader_macos.app
         fi
 
-    - name: Upload artifacts
+    - name: Upload Windows artifact
+      if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
         name: video_downloader_${{ matrix.os }}
-        path: |
-          video_downloader_windows.exe
-          video_downloader_linux
-          video_downloader_macos
+        path: video_downloader_windows.exe
+
+    - name: Upload Linux artifact
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: video_downloader_${{ matrix.os }}
+        path: video_downloader_linux.bin
+
+    - name: Upload macOS artifact
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: video_downloader_${{ matrix.os }}
+        path: video_downloader_macos.app
 
 
   release:
@@ -91,8 +105,8 @@ jobs:
       with:
         artifacts: |
           video_downloader_windows.exe,
-          video_downloader_linux,
-          video_downloader_macos
+          video_downloader_linux.bin,
+          video_downloader_macos.app
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
