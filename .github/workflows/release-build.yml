@@ -95,7 +95,7 @@ jobs:
           video_downloader_macos
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ github.ref_name }}
-        releaseName: Release ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
         body: |
           A new release is available.
           - Includes builds for Windows, Linux, and macOS.
