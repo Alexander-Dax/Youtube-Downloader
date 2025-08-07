@@ -5,14 +5,13 @@ A modern GUI application for downloading YouTube videos and playlists with suppo
 multiple languages, formats (MP4/MP3), and quality options. Built using PyQt6 for a
 professional, cross-platform desktop experience.
 
-Author: Enhanced with PyQt6
 Dependencies: PyQt6, yt-dlp, ffmpeg, imageio-ffmpeg
 """
 
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout,
                              QWidget, QLabel, QLineEdit, QComboBox, QPushButton, 
-                             QMessageBox, QDialog, QMenu)
+                             QMessageBox, QDialog, QMenu, QProgressBar)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QAction
 from yt_dlp import YoutubeDL
@@ -76,6 +75,7 @@ class DownloadThread(QThread):
     
     # Signal definitions for communication with main thread
     status_update = pyqtSignal(str, str)  # message, color
+    progress_update = pyqtSignal(int)  # progress percentage (0-100)
     download_complete = pyqtSignal(bool, str)  # success, message
     
     def __init__(self, video_url, format_type, quality, texts, is_playlist=False):
@@ -96,11 +96,35 @@ class DownloadThread(QThread):
         self.texts = texts
         self.is_playlist = is_playlist
     
+    def progress_hook(self, d):
+        """
+        Progress callback function for yt-dlp.
+        
+        Args:
+            d (dict): Progress information from yt-dlp
+        """
+        if d['status'] == 'downloading':
+            # Calculate progress percentage
+            if 'total_bytes' in d and d['total_bytes']:
+                downloaded = d.get('downloaded_bytes', 0)
+                total = d['total_bytes']
+                progress = int((downloaded / total) * 100)
+                self.progress_update.emit(progress)
+            elif 'total_bytes_estimate' in d and d['total_bytes_estimate']:
+                downloaded = d.get('downloaded_bytes', 0)
+                total = d['total_bytes_estimate']
+                progress = int((downloaded / total) * 100)
+                self.progress_update.emit(progress)
+        elif d['status'] == 'finished':
+            # Download finished, set progress to 100%
+            self.progress_update.emit(100)
+
     def run(self):
         """Main download execution method (runs in separate thread)."""
         try:
-            # Update status to show download started
+            # Update status to show download started and reset progress
             self.status_update.emit(self.texts["downloading"], "blue")
+            self.progress_update.emit(0)
             
             # Map quality selections to yt-dlp format strings
             quality_map = {
@@ -116,7 +140,7 @@ class DownloadThread(QThread):
             # Get ffmpeg executable path for audio conversion
             ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 
-            # Configure yt-dlp download options
+            # Configure yt-dlp download options with progress hook
             ydl_opts = {
                 'format': quality_option,
                 'outtmpl': f'%(title)s-{self.quality}.%(ext)s' if self.format_type == "MP4" else '%(title)s.%(ext)s',
@@ -128,7 +152,8 @@ class DownloadThread(QThread):
                 'quiet': False,  # Set to True to suppress console output
                 'ca_bundle': certifi.where(),  # SSL certificate bundle
                 'ffmpeg_location': ffmpeg_path,
-                'noplaylist': not self.is_playlist  # Download playlist or single video
+                'noplaylist': not self.is_playlist,  # Download playlist or single video
+                'progress_hooks': [self.progress_hook]  # Add progress callback
             }
 
             # Execute download using yt-dlp
@@ -212,9 +237,16 @@ class VideoDownloaderApp(QMainWindow):
         layout.addWidget(self.quality_combo)
         
         # Download action button
-        download_button = QPushButton(self.texts["download_button"])
-        download_button.clicked.connect(self.start_download)
-        layout.addWidget(download_button)
+        self.download_button = QPushButton(self.texts["download_button"])
+        self.download_button.clicked.connect(self.start_download)
+        layout.addWidget(self.download_button)
+        
+        # Progress bar for download progress
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(False)  # Hidden by default
+        layout.addWidget(self.progress_bar)
         
         # Status display label for download progress/results
         self.status_label = QLabel("")
@@ -325,9 +357,16 @@ class VideoDownloaderApp(QMainWindow):
         if self.is_playlist_url(video_url):
             is_playlist = self.show_playlist_dialog()
         
+        # Lock download button and show progress bar
+        self.download_button.setEnabled(False)
+        self.download_button.setText(self.texts.get("downloading_button", "Downloading..."))
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
+
         # Create and start download thread with playlist option
         self.download_thread = DownloadThread(video_url, format_type, quality, self.texts, is_playlist)
         self.download_thread.status_update.connect(self.update_status)
+        self.download_thread.progress_update.connect(self.update_progress)
         self.download_thread.download_complete.connect(self.download_finished)
         self.download_thread.start()
     
@@ -342,6 +381,15 @@ class VideoDownloaderApp(QMainWindow):
         self.status_label.setText(message)
         self.status_label.setStyleSheet(f"color: {color};")
     
+    def update_progress(self, progress):
+        """
+        Update progress bar with download progress.
+        
+        Args:
+            progress (int): Progress percentage (0-100)
+        """
+        self.progress_bar.setValue(progress)
+    
     def download_finished(self, success, message):
         """
         Handle download completion, update UI and show result dialog.
@@ -350,6 +398,12 @@ class VideoDownloaderApp(QMainWindow):
             success (bool): Whether download completed successfully
             message (str): Completion message or error details
         """
+        # Re-enable download button and hide progress bar
+        self.download_button.setEnabled(True)
+        self.download_button.setText(self.texts["download_button"])
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setValue(0)
+        
         if success:
             # Update status for successful download
             self.status_label.setText(self.texts["download_complete"])
@@ -382,6 +436,7 @@ class VideoDownloaderApp(QMainWindow):
                 "format_label": "Select Format:",
                 "quality_label": "Select Video Quality:",
                 "download_button": "Download",
+                "downloading_button": "Downloading...",
                 "downloading": "Downloading... Please wait.",
                 "download_complete": "Download complete!",
                 "download_failed": "Download failed.",
@@ -403,6 +458,7 @@ class VideoDownloaderApp(QMainWindow):
                 "format_label": "Format auswählen:",
                 "quality_label": "Videoqualität auswählen:",
                 "download_button": "Herunterladen",
+                "downloading_button": "Herunterladen...",
                 "downloading": "Herunterladen... Bitte warten.",
                 "download_complete": "Download abgeschlossen!",
                 "download_failed": "Download fehlgeschlagen.",
@@ -424,6 +480,7 @@ class VideoDownloaderApp(QMainWindow):
                 "format_label": "Selecciona el formato:",
                 "quality_label": "Selecciona la calidad del video:",
                 "download_button": "Descargar",
+                "downloading_button": "Descargando...",
                 "downloading": "Descargando... Por favor espera.",
                 "download_complete": "¡Descarga completada!",
                 "download_failed": "Descarga fallida.",
@@ -445,6 +502,7 @@ class VideoDownloaderApp(QMainWindow):
                 "format_label": "Choisir le format :",
                 "quality_label": "Choisir la qualité vidéo :",
                 "download_button": "Télécharger",
+                "downloading_button": "Téléchargement...",
                 "downloading": "Téléchargement... Veuillez patienter.",
                 "download_complete": "Téléchargement terminé !",
                 "download_failed": "Échec du téléchargement.",
