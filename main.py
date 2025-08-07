@@ -10,12 +10,11 @@ Dependencies: PyQt6, yt-dlp, ffmpeg, imageio-ffmpeg
 """
 
 import sys
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, 
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout,
                              QWidget, QLabel, QLineEdit, QComboBox, QPushButton, 
                              QMessageBox, QDialog, QMenu)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QAction
-import ffmpeg._utils
 from yt_dlp import YoutubeDL
 import certifi
 import imageio_ffmpeg
