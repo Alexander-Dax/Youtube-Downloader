@@ -11,3 +11,4 @@ pyinstaller==6.15.0
 pyinstaller-hooks-contrib==2025.8
 setuptools==80.9.0
 yt-dlp==2025.7.21
+PyQt6==6.8.0
