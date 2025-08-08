@@ -9,15 +9,16 @@ Dependencies: PyQt6, yt-dlp, ffmpeg, imageio-ffmpeg
 """
 
 import sys
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout,
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout,
                              QWidget, QLabel, QLineEdit, QComboBox, QPushButton, 
-                             QMessageBox, QDialog, QMenu, QProgressBar)
+                             QMessageBox, QDialog, QMenu, QProgressBar, QFileDialog)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QAction
 from yt_dlp import YoutubeDL
 import certifi
 import imageio_ffmpeg
 import re
+import os
 
 
 class LanguageSelectorDialog(QDialog):
@@ -25,38 +26,91 @@ class LanguageSelectorDialog(QDialog):
     Initial dialog window for language selection.
     
     This dialog appears when the application starts, allowing users to choose
-    their preferred language for the main application interface. Supports
-    German, English, Spanish, and French.
+    their preferred language for the main application interface. The dialog
+    interface updates dynamically based on the selected language.
     """
     
     def __init__(self):
         """Initialize the language selection dialog."""
         super().__init__()
-        self.setWindowTitle("Select Language")
-        self.setFixedSize(300, 200)
         self.selected_language = "Deutsch"  # Default language
         
         # Create main layout
         layout = QVBoxLayout()
         
         # Title label with bold font
-        title_label = QLabel("Choose Language")
-        title_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title_label)
+        self.title_label = QLabel()
+        self.title_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.title_label)
         
         # Language dropdown with available languages
         self.language_combo = QComboBox()
         self.language_combo.addItems(["Deutsch", "English", "Español", "Français"])
         self.language_combo.setCurrentText("Deutsch")
+        self.language_combo.currentTextChanged.connect(self.on_language_changed)
         layout.addWidget(self.language_combo)
         
         # Proceed button to continue to main application
-        proceed_button = QPushButton("Proceed")
-        proceed_button.clicked.connect(self.proceed_to_app)
-        layout.addWidget(proceed_button)
+        self.proceed_button = QPushButton()
+        self.proceed_button.clicked.connect(self.proceed_to_app)
+        layout.addWidget(self.proceed_button)
         
         self.setLayout(layout)
+        
+        # Initialize with default language
+        self.update_interface()
+    
+    def get_selector_texts(self, language):
+        """
+        Get localized text strings for the language selector dialog.
+        
+        Args:
+            language (str): Selected language
+            
+        Returns:
+            dict: Localized text strings for the dialog
+        """
+        texts = {
+            "English": {
+                "window_title": "Select Language",
+                "title": "Choose Language",
+                "proceed": "Proceed"
+            },
+            "Deutsch": {
+                "window_title": "Sprache wählen",
+                "title": "Sprache wählen",
+                "proceed": "Weiter"
+            },
+            "Español": {
+                "window_title": "Seleccionar idioma",
+                "title": "Elegir idioma",
+                "proceed": "Continuar"
+            },
+            "Français": {
+                "window_title": "Sélectionner la langue",
+                "title": "Choisir la langue",
+                "proceed": "Continuer"
+            }
+        }
+        return texts.get(language, texts["English"])
+    
+    def update_interface(self):
+        """Update all interface elements with the currently selected language."""
+        current_language = self.language_combo.currentText()
+        texts = self.get_selector_texts(current_language)
+        
+        # Update window title and labels
+        self.setWindowTitle(texts["window_title"])
+        self.title_label.setText(texts["title"])
+        self.proceed_button.setText(texts["proceed"])
+        
+        # Adjust window size if needed for longer text
+        self.setFixedSize(300, 200)
+    
+    def on_language_changed(self):
+        """Called when user changes language selection in dropdown."""
+        self.update_interface()
     
     def proceed_to_app(self):
         """Store selected language and close dialog."""
@@ -78,16 +132,17 @@ class DownloadThread(QThread):
     progress_update = pyqtSignal(int)  # progress percentage (0-100)
     download_complete = pyqtSignal(bool, str)  # success, message
     
-    def __init__(self, video_url, format_type, quality, texts, is_playlist=False):
+    def __init__(self, video_url, format_type, quality, texts, is_playlist=False, destination_folder=None):
         """
         Initialize the download thread.
         
         Args:
             video_url (str): URL of the video or playlist to download
-            format_type (str): "MP4" for video or "MP3" for audio only
-            quality (str): Video quality selection (Best, 1080p, etc.)
+            format_type (str): Format selection - "MP4", "WEBM", "MP3", or "WAV"
+            quality (str): Video quality selection (Best, 1080p, etc.) - may be localized
             texts (dict): Localized text strings for UI messages
             is_playlist (bool): Whether to download entire playlist or single video
+            destination_folder (str): Path to download destination folder
         """
         super().__init__()
         self.video_url = video_url
@@ -95,6 +150,7 @@ class DownloadThread(QThread):
         self.quality = quality
         self.texts = texts
         self.is_playlist = is_playlist
+        self.destination_folder = destination_folder or os.getcwd()
     
     def progress_hook(self, d):
         """
@@ -119,15 +175,30 @@ class DownloadThread(QThread):
             # Download finished, set progress to 100%
             self.progress_update.emit(100)
 
-    def run(self):
-        """Main download execution method (runs in separate thread)."""
-        try:
-            # Update status to show download started and reset progress
-            self.status_update.emit(self.texts["downloading"], "blue")
-            self.progress_update.emit(0)
-            
-            # Map quality selections to yt-dlp format strings
-            quality_map = {
+    def get_format_options(self):
+        """
+        Get yt-dlp format string based on selected format and quality.
+        
+        Returns:
+            tuple: (format_string, postprocessors_list)
+        """
+        # Map localized quality to standard format strings
+        quality_reverse_map = {
+            # English
+            "Best": "Best", "Lowest": "Lowest",
+            # German  
+            "Beste": "Best", "Niedrigste": "Lowest",
+            # Spanish
+            "Mejor": "Best", "Más baja": "Lowest",
+            # French
+            "Meilleure": "Best", "Plus faible": "Lowest"
+        }
+        
+        standard_quality = quality_reverse_map.get(self.quality, self.quality)
+        
+        # Handle different format types
+        if self.format_type == "MP4":
+            quality_formats = {
                 "Best": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
                 "1080p": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]",
                 "720p": "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]",
@@ -135,20 +206,63 @@ class DownloadThread(QThread):
                 "360p": "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]",
                 "Lowest": "worst[ext=mp4]",
             }
-            quality_option = quality_map[self.quality]
+            return quality_formats.get(standard_quality, quality_formats["Best"]), []
+            
+        elif self.format_type == "WEBM":
+            quality_formats = {
+                "Best": "bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]",
+                "1080p": "bestvideo[height<=1080][ext=webm]+bestaudio[ext=webm]/best[height<=1080][ext=webm]",
+                "720p": "bestvideo[height<=720][ext=webm]+bestaudio[ext=webm]/best[height<=720][ext=webm]",
+                "480p": "bestvideo[height<=480][ext=webm]+bestaudio[ext=webm]/best[height<=480][ext=webm]",
+                "360p": "bestvideo[height<=360][ext=webm]+bestaudio[ext=webm]/best[height<=360][ext=webm]",
+                "Lowest": "worst[ext=webm]",
+            }
+            return quality_formats.get(standard_quality, quality_formats["Best"]), []
+            
+        elif self.format_type == "MP3":
+            return "bestaudio/best", [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192'
+            }]
+            
+        elif self.format_type == "WAV":
+            return "bestaudio/best", [{
+                'key': 'FFmpegExtractAudio', 
+                'preferredcodec': 'wav',
+                'preferredquality': '192'
+            }]
+            
+        # Default fallback
+        return "best", []
+
+    def run(self):
+        """Main download execution method (runs in separate thread)."""
+        try:
+            # Update status to show download started and reset progress
+            self.status_update.emit(self.texts["downloading"], "blue")
+            self.progress_update.emit(0)
+            
+            # Get format and postprocessor options
+            format_option, postprocessors = self.get_format_options()
 
             # Get ffmpeg executable path for audio conversion
             ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 
+            # Generate output template with destination folder
+            if self.format_type in ["MP4", "WEBM"]:
+                filename_template = f'%(title)s-{self.quality}.%(ext)s'
+            else:  # Audio formats
+                filename_template = '%(title)s.%(ext)s'
+            
+            # Combine destination folder with filename template
+            outtmpl = os.path.join(self.destination_folder, filename_template)
+
             # Configure yt-dlp download options with progress hook
             ydl_opts = {
-                'format': quality_option,
-                'outtmpl': f'%(title)s-{self.quality}.%(ext)s' if self.format_type == "MP4" else '%(title)s.%(ext)s',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192'
-                }] if self.format_type == "MP3" else [],
+                'format': format_option,
+                'outtmpl': outtmpl,
+                'postprocessors': postprocessors,
                 'quiet': False,  # Set to True to suppress console output
                 'ca_bundle': certifi.where(),  # SSL certificate bundle
                 'ffmpeg_location': ffmpeg_path,
@@ -190,7 +304,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # Configure main window properties
         self.setWindowTitle(self.texts["title"])
-        self.setFixedSize(500, 400)
+        self.setFixedSize(500, 450)  # Increased height for destination folder
         
         # Create central widget and main layout
         central_widget = QWidget()
@@ -214,14 +328,39 @@ class VideoDownloaderApp(QMainWindow):
         self.setup_context_menu()  # Enable right-click paste/delete
         layout.addWidget(self.url_entry)
         
+        # Destination folder section
+        destination_label = QLabel(self.texts["destination_label"])
+        destination_label.setFont(QFont("Arial", 12))
+        layout.addWidget(destination_label)
+        
+        # Destination folder selection layout
+        destination_layout = QHBoxLayout()
+        
+        # Destination folder display
+        self.destination_entry = QLineEdit()
+        self.destination_entry.setFont(QFont("Arial", 10))
+        self.destination_entry.setText(os.getcwd())  # Default to current working directory
+        self.destination_entry.setReadOnly(True)  # Read-only, user must use browse button
+        destination_layout.addWidget(self.destination_entry)
+        
+        # Browse button for folder selection
+        self.browse_button = QPushButton(self.texts["browse_button"])
+        self.browse_button.clicked.connect(self.browse_destination)
+        destination_layout.addWidget(self.browse_button)
+        
+        # Create widget for destination layout and add to main layout
+        destination_widget = QWidget()
+        destination_widget.setLayout(destination_layout)
+        layout.addWidget(destination_widget)
+        
         # Format selection section
         format_label = QLabel(self.texts["format_label"])
         format_label.setFont(QFont("Arial", 12))
         layout.addWidget(format_label)
         
-        # Dropdown for MP4 video or MP3 audio selection
+        # Dropdown for format selection (video and audio options)
         self.format_combo = QComboBox()
-        self.format_combo.addItems(["MP4", "MP3"])
+        self.format_combo.addItems(["MP4", "WEBM", "MP3", "WAV"])
         self.format_combo.setCurrentText("MP4")
         layout.addWidget(self.format_combo)
         
@@ -232,8 +371,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # Dropdown for video quality options
         self.quality_combo = QComboBox()
-        self.quality_combo.addItems(["Best", "1080p", "720p", "480p", "360p", "Lowest"])
-        self.quality_combo.setCurrentText("Best")
+        self.populate_quality_options()
         layout.addWidget(self.quality_combo)
         
         # Download action button
@@ -253,6 +391,60 @@ class VideoDownloaderApp(QMainWindow):
         self.status_label.setFont(QFont("Arial", 10))
         self.status_label.setStyleSheet("color: green;")
         layout.addWidget(self.status_label)
+    
+    def populate_quality_options(self):
+        """Populate quality dropdown with localized options."""
+        quality_options = [
+            self.texts.get("quality_best", "Best"),
+            "1080p", 
+            "720p", 
+            "480p", 
+            "360p", 
+            self.texts.get("quality_lowest", "Lowest")
+        ]
+        self.quality_combo.addItems(quality_options)
+        self.quality_combo.setCurrentText(self.texts.get("quality_best", "Best"))
+    
+    def get_quality_mapping(self, selected_quality):
+        """
+        Map localized quality text to yt-dlp format string.
+        
+        Args:
+            selected_quality (str): User-selected quality option (possibly localized)
+            
+        Returns:
+            str: Corresponding yt-dlp format string
+        """
+        # Map localized quality names back to standard values
+        quality_reverse_map = {
+            # English
+            "Best": "Best",
+            "Lowest": "Lowest",
+            # German
+            "Beste": "Best", 
+            "Niedrigste": "Lowest",
+            # Spanish
+            "Mejor": "Best",
+            "Más baja": "Lowest", 
+            # French
+            "Meilleure": "Best",
+            "Plus faible": "Lowest"
+        }
+        
+        # Get the standard quality name
+        standard_quality = quality_reverse_map.get(selected_quality, selected_quality)
+        
+        # Map to yt-dlp format strings
+        quality_map = {
+            "Best": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
+            "1080p": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]",
+            "720p": "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]",
+            "480p": "bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480][ext=mp4]",
+            "360p": "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]",
+            "Lowest": "worst[ext=mp4]",
+        }
+        
+        return quality_map.get(standard_quality, quality_map["Best"])
     
     def setup_context_menu(self):
         """Configure right-click context menu for URL input field."""
@@ -289,6 +481,18 @@ class VideoDownloaderApp(QMainWindow):
     def delete_url_entry(self):
         """Clear all text from URL input field."""
         self.url_entry.clear()
+    
+    def browse_destination(self):
+        """Open folder selection dialog for download destination."""
+        current_dir = self.destination_entry.text()
+        selected_dir = QFileDialog.getExistingDirectory(
+            self, 
+            self.texts["select_destination"], 
+            current_dir
+        )
+        
+        if selected_dir:  # User selected a folder (didn't cancel)
+            self.destination_entry.setText(selected_dir)
     
     def is_playlist_url(self, url):
         """
@@ -363,8 +567,11 @@ class VideoDownloaderApp(QMainWindow):
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
 
-        # Create and start download thread with playlist option
-        self.download_thread = DownloadThread(video_url, format_type, quality, self.texts, is_playlist)
+        # Get selected destination folder
+        destination_folder = self.destination_entry.text()
+
+        # Create and start download thread with playlist option and destination
+        self.download_thread = DownloadThread(video_url, format_type, quality, self.texts, is_playlist, destination_folder)
         self.download_thread.status_update.connect(self.update_status)
         self.download_thread.progress_update.connect(self.update_progress)
         self.download_thread.download_complete.connect(self.download_finished)
@@ -450,6 +657,11 @@ class VideoDownloaderApp(QMainWindow):
                 "playlist_question": "This appears to be a playlist URL. What would you like to download?",
                 "download_playlist": "Download Entire Playlist",
                 "download_single": "Download Single Video",
+                "quality_best": "Best",
+                "quality_lowest": "Lowest",
+                "destination_label": "Download Destination:",
+                "browse_button": "Browse...",
+                "select_destination": "Select Download Folder",
             },
             "Deutsch": {
                 "title": "Video-Downloader",
@@ -472,6 +684,11 @@ class VideoDownloaderApp(QMainWindow):
                 "playlist_question": "Dies scheint eine Playlist-URL zu sein. Was möchten Sie herunterladen?",
                 "download_playlist": "Gesamte Playlist herunterladen",
                 "download_single": "Einzelnes Video herunterladen",
+                "quality_best": "Beste",
+                "quality_lowest": "Niedrigste",
+                "destination_label": "Download-Ordner:",
+                "browse_button": "Durchsuchen...",
+                "select_destination": "Download-Ordner wählen",
             },
             "Español": {
                 "title": "Descargador de Videos",
@@ -494,6 +711,11 @@ class VideoDownloaderApp(QMainWindow):
                 "playlist_question": "Parece que es una URL de lista de reproducción. ¿Qué te gustaría descargar?",
                 "download_playlist": "Descargar lista completa",
                 "download_single": "Descargar video individual",
+                "quality_best": "Mejor",
+                "quality_lowest": "Más baja",
+                "destination_label": "Carpeta de descarga:",
+                "browse_button": "Examinar...",
+                "select_destination": "Seleccionar carpeta de descarga",
             },
             "Français": {
                 "title": "Téléchargeur de Vidéos",
@@ -516,6 +738,11 @@ class VideoDownloaderApp(QMainWindow):
                 "playlist_question": "Ceci semble être une URL de playlist. Que souhaitez-vous télécharger ?",
                 "download_playlist": "Télécharger la playlist entière",
                 "download_single": "Télécharger une seule vidéo",
+                "quality_best": "Meilleure",
+                "quality_lowest": "Plus faible",
+                "destination_label": "Dossier de téléchargement:",
+                "browse_button": "Parcourir...",
+                "select_destination": "Sélectionner le dossier de téléchargement",
             },
         }
         return translations.get(language, translations["English"])
