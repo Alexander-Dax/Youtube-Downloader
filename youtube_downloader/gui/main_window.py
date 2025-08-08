@@ -99,6 +99,7 @@ class VideoDownloaderApp(QMainWindow):
         self.format_combo = QComboBox()
         self.format_combo.addItems(["MP4", "WEBM", "MP3", "WAV"])
         self.format_combo.setCurrentText("MP4")
+        self.format_combo.currentTextChanged.connect(self.on_format_changed)
         layout.addWidget(self.format_combo)
         
         # Quality selection section
@@ -130,17 +131,39 @@ class VideoDownloaderApp(QMainWindow):
         layout.addWidget(self.status_label)
     
     def populate_quality_options(self):
-        """Populate quality dropdown with localized options."""
-        quality_options = [
-            self.texts.get("quality_best", "Best"),
-            "1080p", 
-            "720p", 
-            "480p", 
-            "360p", 
-            self.texts.get("quality_lowest", "Lowest")
-        ]
-        self.quality_combo.addItems(quality_options)
-        self.quality_combo.setCurrentText(self.texts.get("quality_best", "Best"))
+        """Populate quality dropdown with localized options based on selected format."""
+        current_format = self.format_combo.currentText()
+        
+        # Clear existing options
+        self.quality_combo.clear()
+        
+        if current_format in ["MP4", "WEBM"]:
+            # Video formats get full quality options
+            quality_options = [
+                self.texts.get("quality_best", "Best"),
+                "1080p", 
+                "720p", 
+                "480p", 
+                "360p", 
+                self.texts.get("quality_lowest", "Lowest")
+            ]
+            self.quality_combo.addItems(quality_options)
+            self.quality_combo.setCurrentText(self.texts.get("quality_best", "Best"))
+            self.quality_combo.setEnabled(True)
+        else:
+            # Audio formats (MP3/WAV) get audio-specific quality options
+            audio_quality_options = [
+                self.texts.get("audio_quality_high", "High Quality"),
+                self.texts.get("audio_quality_medium", "Medium Quality"),
+                self.texts.get("audio_quality_low", "Low Quality")
+            ]
+            self.quality_combo.addItems(audio_quality_options)
+            self.quality_combo.setCurrentText(self.texts.get("audio_quality_high", "High Quality"))
+            self.quality_combo.setEnabled(True)
+    
+    def on_format_changed(self):
+        """Called when user changes format selection."""
+        self.populate_quality_options()
     
     def setup_context_menu(self):
         """Configure right-click context menu for URL input field."""

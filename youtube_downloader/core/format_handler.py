@@ -14,14 +14,23 @@ def get_quality_reverse_map():
         dict: Mapping of localized quality strings to standard format strings
     """
     return {
-        # English
+        # Video quality - English
         "Best": "Best", "Lowest": "Lowest",
-        # German  
+        # Video quality - German  
         "Beste": "Best", "Niedrigste": "Lowest",
-        # Spanish
+        # Video quality - Spanish
         "Mejor": "Best", "Más baja": "Lowest",
-        # French
-        "Meilleure": "Best", "Plus faible": "Lowest"
+        # Video quality - French
+        "Meilleure": "Best", "Plus faible": "Lowest",
+        
+        # Audio quality - English
+        "High Quality": "High", "Medium Quality": "Medium", "Low Quality": "Low",
+        # Audio quality - German
+        "Hohe Qualität": "High", "Mittlere Qualität": "Medium", "Niedrige Qualität": "Low",
+        # Audio quality - Spanish  
+        "Alta calidad": "High", "Calidad media": "Medium", "Baja calidad": "Low",
+        # Audio quality - French
+        "Haute qualité": "High", "Qualité moyenne": "Medium", "Basse qualité": "Low"
     }
 
 
@@ -64,17 +73,32 @@ def get_format_options(format_type, quality):
         return quality_formats.get(standard_quality, quality_formats["Best"]), []
         
     elif format_type == "MP3":
+        # Map audio quality to bitrates
+        audio_quality_map = {
+            "High": "320",
+            "Medium": "192", 
+            "Low": "128"
+        }
+        bitrate = audio_quality_map.get(standard_quality, "192")
+        
         return "bestaudio/best", [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192'
+            'preferredquality': bitrate
         }]
         
     elif format_type == "WAV":
-        return "bestaudio/best", [{
+        # WAV is lossless, but we can still control the source quality
+        audio_source_map = {
+            "High": "bestaudio[abr>=320]/bestaudio/best",
+            "Medium": "bestaudio[abr>=192]/bestaudio/best",
+            "Low": "bestaudio[abr>=128]/bestaudio/best"
+        }
+        source_format = audio_source_map.get(standard_quality, "bestaudio/best")
+        
+        return source_format, [{
             'key': 'FFmpegExtractAudio', 
-            'preferredcodec': 'wav',
-            'preferredquality': '192'
+            'preferredcodec': 'wav'
         }]
         
     # Default fallback

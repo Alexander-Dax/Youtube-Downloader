@@ -78,6 +78,9 @@ def get_texts(language):
             "destination_label": "Download Destination:",
             "browse_button": "Browse...",
             "select_destination": "Select Download Folder",
+            "audio_quality_high": "High Quality",
+            "audio_quality_medium": "Medium Quality", 
+            "audio_quality_low": "Low Quality",
         },
         "Deutsch": {
             "title": "Video-Downloader",
@@ -105,6 +108,9 @@ def get_texts(language):
             "destination_label": "Download-Ordner:",
             "browse_button": "Durchsuchen...",
             "select_destination": "Download-Ordner wählen",
+            "audio_quality_high": "Hohe Qualität",
+            "audio_quality_medium": "Mittlere Qualität",
+            "audio_quality_low": "Niedrige Qualität",
         },
         "Español": {
             "title": "Descargador de Videos",
@@ -132,6 +138,9 @@ def get_texts(language):
             "destination_label": "Carpeta de descarga:",
             "browse_button": "Examinar...",
             "select_destination": "Seleccionar carpeta de descarga",
+            "audio_quality_high": "Alta calidad",
+            "audio_quality_medium": "Calidad media",
+            "audio_quality_low": "Baja calidad",
         },
         "Français": {
             "title": "Téléchargeur de Vidéos",
@@ -159,6 +168,9 @@ def get_texts(language):
             "destination_label": "Dossier de téléchargement:",
             "browse_button": "Parcourir...",
             "select_destination": "Sélectionner le dossier de téléchargement",
+            "audio_quality_high": "Haute qualité",
+            "audio_quality_medium": "Qualité moyenne",
+            "audio_quality_low": "Basse qualité",
         },
     }
     return translations.get(language, translations["English"])
