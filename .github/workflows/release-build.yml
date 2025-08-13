@@ -14,12 +14,13 @@ jobs:
             name: 'windows'
           - os: 'ubuntu-latest'
             name: 'ubuntu-latest'
-          - os: 'ubuntu-20.04'
-            name: 'ubuntu-20.04'
+          - os: 'ubuntu-22.04'
+            name: 'ubuntu-22.04'
           - os: 'macos-latest'
             name: 'macos'
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45  # Prevent hanging builds
 
     steps:
     - name: Checkout repository
@@ -32,13 +33,32 @@ jobs:
 
     - name: Install system dependencies (Linux)
       if: startsWith(matrix.os, 'ubuntu-')
+      timeout-minutes: 10
       run: |
         sudo apt-get update
-        sudo apt-get install -y libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libopengl0
+        # Install comprehensive PyQt6 dependencies
+        sudo apt-get install -y \
+          libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 \
+          libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+          libxcb-shape0 libxcb-xfixes0 libopengl0 libxcb-xinput0 \
+          '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev \
+          libxi-dev libxkbcommon-dev libgl1-mesa-dev xvfb
+        
+        # For Ubuntu 22.04 specific compatibility
+        if [ "${{ matrix.os }}" == "ubuntu-22.04" ]; then
+          sudo apt-get install -y python3-pip python3-setuptools python3-dev
+        fi
 
     - name: Install dependencies
+      timeout-minutes: 15
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip setuptools wheel
+        
+        # Ubuntu 22.04 specific fixes
+        if [ "${{ matrix.os }}" == "ubuntu-22.04" ]; then
+          pip install testresources  # Required for PyQt6 compatibility
+        fi
+        
         pip install -r requirements.txt
         pip install certifi  # Ensure certifi is installed
 
@@ -50,21 +70,39 @@ jobs:
 
     - name: Build application
       shell: bash
+      timeout-minutes: 25
       run: |
         echo "CERTIFI_CA_BUNDLE: $CERTIFI_CA_BUNDLE"
+        
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
           pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE;certifi" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --name video_downloader main.py
           mv dist/video_downloader.exe video_downloader_windows.exe
+          
         elif [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
           export QT_QPA_PLATFORM=offscreen
+          export DISPLAY=:99
+          export PYTHONFAULTHANDLER=1
           pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE:certifi" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --name video_downloader main.py
           mv dist/video_downloader video_downloader_linux.bin
           chmod +x video_downloader_linux.bin
-        elif [ "${{ matrix.os }}" == "ubuntu-20.04" ]; then
+          
+        elif [ "${{ matrix.os }}" == "ubuntu-22.04" ]; then
+          echo "Building on Ubuntu 22.04 LTS..."
           export QT_QPA_PLATFORM=offscreen
-          pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE:certifi" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --name video_downloader main.py
-          mv dist/video_downloader video_downloader_linux_ubuntu20.04.bin
-          chmod +x video_downloader_linux_ubuntu20.04.bin
+          export DISPLAY=:99
+          export PYTHONFAULTHANDLER=1
+          
+          echo "Building with PyInstaller..."
+          pyinstaller --noconsole --onefile \
+            --add-data "$CERTIFI_CA_BUNDLE:certifi" \
+            --hidden-import=PyQt6.QtCore \
+            --hidden-import=PyQt6.QtGui \
+            --hidden-import=PyQt6.QtWidgets \
+            --name video_downloader main.py
+          
+          mv dist/video_downloader video_downloader_linux_ubuntu22.04.bin
+          chmod +x video_downloader_linux_ubuntu22.04.bin
+          
         elif [ "${{ matrix.os }}" == "macos-latest" ]; then
           pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE:certifi" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --name video_downloader main.py
           mv dist/video_downloader video_downloader_macos
@@ -85,12 +123,12 @@ jobs:
         name: video_downloader_${{ matrix.os }}
         path: video_downloader_linux.bin
 
-    - name: Upload Linux artifact (Ubuntu 20.04 LTS)
-      if: matrix.os == 'ubuntu-20.04'
+    - name: Upload Linux artifact (Ubuntu 22.04 LTS)
+      if: matrix.os == 'ubuntu-22.04'
       uses: actions/upload-artifact@v4
       with:
         name: video_downloader_${{ matrix.os }}
-        path: video_downloader_linux_ubuntu20.04.bin
+        path: video_downloader_linux_ubuntu22.04.bin
 
     - name: Upload macOS artifact
       if: matrix.os == 'macos-latest'
@@ -115,10 +153,10 @@ jobs:
       with:
         name: video_downloader_ubuntu-latest
 
-    - name: Download Linux artifact (Ubuntu 20.04 LTS)
+    - name: Download Linux artifact (Ubuntu 22.04 LTS)
       uses: actions/download-artifact@v4
       with:
-        name: video_downloader_ubuntu-20.04
+        name: video_downloader_ubuntu-22.04
 
     - name: Download macOS artifact
       uses: actions/download-artifact@v4
@@ -131,15 +169,21 @@ jobs:
         artifacts: |
           video_downloader_windows.exe
           video_downloader_linux.bin
-          video_downloader_linux_ubuntu20.04.bin
+          video_downloader_linux_ubuntu22.04.bin
           video_downloader_macos
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
         body: |
           A new release is available.
-          - Includes builds for Windows, Linux (Latest), Linux (Ubuntu 20.04 LTS), and macOS.
+          - Includes builds for Windows, Linux (Latest), Linux (Ubuntu 22.04 LTS), and macOS.
           
           **Linux Users:**
-          - Use `video_downloader_linux.bin` for Ubuntu 22.04+ and other modern distributions
-          - Use `video_downloader_linux_ubuntu20.04.bin` for Ubuntu 20.04 LTS and compatible older systems
+          - Use `video_downloader_linux.bin` for Ubuntu 24.04+ and other modern distributions
+          - Use `video_downloader_linux_ubuntu22.04.bin` for Ubuntu 22.04 LTS and compatible systems
+          
+          **Changelog:**
+          - Fixed SABR streaming warnings with improved yt-dlp client configuration
+          - Enhanced error handling for playlist downloads with failed videos
+          - Added abort functionality to cancel downloads in progress
+          - Improved file skipping to avoid re-downloading existing content
