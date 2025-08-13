@@ -9,7 +9,15 @@ jobs:
   build:
     strategy:
       matrix:
-        os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
+        include:
+          - os: 'windows-latest'
+            name: 'windows'
+          - os: 'ubuntu-latest'
+            name: 'ubuntu-latest'
+          - os: 'ubuntu-20.04'
+            name: 'ubuntu-20.04'
+          - os: 'macos-latest'
+            name: 'macos'
 
     runs-on: ${{ matrix.os }}
 
@@ -23,7 +31,7 @@ jobs:
         python-version: '3.x'
 
     - name: Install system dependencies (Linux)
-      if: matrix.os == 'ubuntu-latest'
+      if: startsWith(matrix.os, 'ubuntu-')
       run: |
         sudo apt-get update
         sudo apt-get install -y libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libopengl0
@@ -52,6 +60,11 @@ jobs:
           pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE:certifi" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --name video_downloader main.py
           mv dist/video_downloader video_downloader_linux.bin
           chmod +x video_downloader_linux.bin
+        elif [ "${{ matrix.os }}" == "ubuntu-20.04" ]; then
+          export QT_QPA_PLATFORM=offscreen
+          pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE:certifi" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --name video_downloader main.py
+          mv dist/video_downloader video_downloader_linux_ubuntu20.04.bin
+          chmod +x video_downloader_linux_ubuntu20.04.bin
         elif [ "${{ matrix.os }}" == "macos-latest" ]; then
           pyinstaller --noconsole --onefile --add-data "$CERTIFI_CA_BUNDLE:certifi" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --name video_downloader main.py
           mv dist/video_downloader video_downloader_macos
@@ -65,12 +78,19 @@ jobs:
         name: video_downloader_${{ matrix.os }}
         path: video_downloader_windows.exe
 
-    - name: Upload Linux artifact
+    - name: Upload Linux artifact (Latest)
       if: matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
         name: video_downloader_${{ matrix.os }}
         path: video_downloader_linux.bin
+
+    - name: Upload Linux artifact (Ubuntu 20.04 LTS)
+      if: matrix.os == 'ubuntu-20.04'
+      uses: actions/upload-artifact@v4
+      with:
+        name: video_downloader_${{ matrix.os }}
+        path: video_downloader_linux_ubuntu20.04.bin
 
     - name: Upload macOS artifact
       if: matrix.os == 'macos-latest'
@@ -90,10 +110,15 @@ jobs:
       with:
         name: video_downloader_windows-latest
 
-    - name: Download Linux artifact
+    - name: Download Linux artifact (Latest)
       uses: actions/download-artifact@v4
       with:
         name: video_downloader_ubuntu-latest
+
+    - name: Download Linux artifact (Ubuntu 20.04 LTS)
+      uses: actions/download-artifact@v4
+      with:
+        name: video_downloader_ubuntu-20.04
 
     - name: Download macOS artifact
       uses: actions/download-artifact@v4
@@ -106,10 +131,15 @@ jobs:
         artifacts: |
           video_downloader_windows.exe
           video_downloader_linux.bin
+          video_downloader_linux_ubuntu20.04.bin
           video_downloader_macos
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
         body: |
           A new release is available.
-          - Includes builds for Windows, Linux, and macOS.
+          - Includes builds for Windows, Linux (Latest), Linux (Ubuntu 20.04 LTS), and macOS.
+          
+          **Linux Users:**
+          - Use `video_downloader_linux.bin` for Ubuntu 22.04+ and other modern distributions
+          - Use `video_downloader_linux_ubuntu20.04.bin` for Ubuntu 20.04 LTS and compatible older systems
