@@ -1,0 +1,252 @@
+"""
+Translation strings for all supported languages.
+
+Contains localized text for the GUI interface in English, German, Spanish, and French.
+"""
+
+
+def get_selector_texts(language):
+    """
+    Get localized text strings for the language selector dialog.
+    
+    Args:
+        language (str): Selected language
+        
+    Returns:
+        dict: Localized text strings for the dialog
+    """
+    texts = {
+        "English": {
+            "window_title": "Select Language",
+            "title": "Choose Language",
+            "proceed": "Proceed"
+        },
+        "Deutsch": {
+            "window_title": "Sprache wählen",
+            "title": "Sprache wählen",
+            "proceed": "Weiter"
+        },
+        "Español": {
+            "window_title": "Seleccionar idioma",
+            "title": "Elegir idioma",
+            "proceed": "Continuar"
+        },
+        "Français": {
+            "window_title": "Sélectionner la langue",
+            "title": "Choisir la langue",
+            "proceed": "Continuer"
+        }
+    }
+    return texts.get(language, texts["English"])
+
+
+def get_texts(language):
+    """
+    Get localized text strings for the specified language.
+    
+    Args:
+        language (str): Language code (English, Deutsch, Español, Français)
+        
+    Returns:
+        dict: Dictionary containing all UI text strings in the specified language
+    """
+    # Define translations for the UI
+    translations = {
+        "English": {
+            "title": "Video Downloader",
+            "app_title": "YouTube Video Downloader",
+            "url_label": "Enter Video URL:",
+            "format_label": "Select Format:",
+            "quality_label": "Select Video Quality:",
+            "download_button": "Download",
+            "downloading_button": "Downloading...",
+            "downloading": "Downloading... Please wait.",
+            "download_complete": "Download complete!",
+            "download_failed": "Download failed.",
+            "success": "Success",
+            "error": "Error",
+            "url_error": "Please enter a video URL.",
+            "download_error": "Failed to download the video. Please check the URL or your internet connection.",
+            "paste": "Paste",
+            "delete": "Delete",
+            "playlist_detected": "Playlist Detected",
+            "playlist_question": "This appears to be a playlist URL. What would you like to download?",
+            "download_playlist": "Download Entire Playlist",
+            "download_single": "Download Single Video",
+            "quality_best": "Best",
+            "quality_lowest": "Lowest",
+            "destination_label": "Download Destination:",
+            "browse_button": "Browse...",
+            "select_destination": "Select Download Folder",
+            "audio_quality_high": "High Quality",
+            "audio_quality_medium": "Medium Quality", 
+            "audio_quality_low": "Low Quality",
+            "download_partial_success": "Download completed with some failures",
+            "download_all_failed": "All videos failed to download",
+            "partial_download_title": "Download Completed with Errors",
+            "failed_videos_header": "The following videos failed to download:",
+            "more_failures": "... and {} more failures",
+            "error_private": "Private video",
+            "error_unavailable": "Video unavailable",
+            "error_not_found": "Video not found",
+            "error_copyright": "Copyright restricted",
+            "error_geo": "Geo-restricted content",
+            "error_age": "Age-restricted content",
+            "error_unknown": "Unknown error",
+            "abort_button": "Abort",
+            "aborting_button": "Aborting...",
+            "aborting_status": "Aborting download...",
+            "download_aborted": "Download was aborted",
+            "download_skipped": "File already exists, skipped download",
+            "download_with_skips": "Download completed with skipped files",
+            "download_mixed_results": "Download completed with mixed results",
+        },
+        "Deutsch": {
+            "title": "Video-Downloader",
+            "app_title": "YouTube Video-Downloader",
+            "url_label": "Geben Sie die Video-URL ein:",
+            "format_label": "Format auswählen:",
+            "quality_label": "Videoqualität auswählen:",
+            "download_button": "Herunterladen",
+            "downloading_button": "Herunterladen...",
+            "downloading": "Herunterladen... Bitte warten.",
+            "download_complete": "Download abgeschlossen!",
+            "download_failed": "Download fehlgeschlagen.",
+            "success": "Erfolg",
+            "error": "Fehler",
+            "url_error": "Bitte geben Sie eine Video-URL ein.",
+            "download_error": "Das Video konnte nicht heruntergeladen werden. Bitte überprüfen Sie die URL oder Ihre Internetverbindung.",
+            "paste": "Einfügen",
+            "delete": "Löschen",
+            "playlist_detected": "Playlist erkannt",
+            "playlist_question": "Dies scheint eine Playlist-URL zu sein. Was möchten Sie herunterladen?",
+            "download_playlist": "Gesamte Playlist herunterladen",
+            "download_single": "Einzelnes Video herunterladen",
+            "quality_best": "Beste",
+            "quality_lowest": "Niedrigste",
+            "destination_label": "Download-Ordner:",
+            "browse_button": "Durchsuchen...",
+            "select_destination": "Download-Ordner wählen",
+            "audio_quality_high": "Hohe Qualität",
+            "audio_quality_medium": "Mittlere Qualität",
+            "audio_quality_low": "Niedrige Qualität",
+            "download_partial_success": "Download mit einigen Fehlern abgeschlossen",
+            "download_all_failed": "Alle Videos konnten nicht heruntergeladen werden",
+            "partial_download_title": "Download mit Fehlern abgeschlossen",
+            "failed_videos_header": "Die folgenden Videos konnten nicht heruntergeladen werden:",
+            "more_failures": "... und {} weitere Fehler",
+            "error_private": "Privates Video",
+            "error_unavailable": "Video nicht verfügbar",
+            "error_not_found": "Video nicht gefunden",
+            "error_copyright": "Urheberrechtlich geschützt",
+            "error_geo": "Geografisch eingeschränkter Inhalt",
+            "error_age": "Altersbeschränkter Inhalt",
+            "error_unknown": "Unbekannter Fehler",
+            "abort_button": "Abbrechen",
+            "aborting_button": "Abbrechen...",
+            "aborting_status": "Download wird abgebrochen...",
+            "download_aborted": "Download wurde abgebrochen",
+            "download_skipped": "Datei existiert bereits, Download übersprungen",
+            "download_with_skips": "Download abgeschlossen mit übersprungenen Dateien",
+            "download_mixed_results": "Download abgeschlossen mit gemischten Ergebnissen",
+        },
+        "Español": {
+            "title": "Descargador de Videos",
+            "app_title": "Descargador de Videos de YouTube",
+            "url_label": "Introduce la URL del video:",
+            "format_label": "Selecciona el formato:",
+            "quality_label": "Selecciona la calidad del video:",
+            "download_button": "Descargar",
+            "downloading_button": "Descargando...",
+            "downloading": "Descargando... Por favor espera.",
+            "download_complete": "¡Descarga completada!",
+            "download_failed": "Descarga fallida.",
+            "success": "Éxito",
+            "error": "Error",
+            "url_error": "Por favor, introduce una URL de video.",
+            "download_error": "No se pudo descargar el video. Verifica la URL o tu conexión a internet.",
+            "paste": "Insertar",
+            "delete": "Eliminar",
+            "playlist_detected": "Lista de reproducción detectada",
+            "playlist_question": "Parece que es una URL de lista de reproducción. ¿Qué te gustaría descargar?",
+            "download_playlist": "Descargar lista completa",
+            "download_single": "Descargar video individual",
+            "quality_best": "Mejor",
+            "quality_lowest": "Más baja",
+            "destination_label": "Carpeta de descarga:",
+            "browse_button": "Examinar...",
+            "select_destination": "Seleccionar carpeta de descarga",
+            "audio_quality_high": "Alta calidad",
+            "audio_quality_medium": "Calidad media",
+            "audio_quality_low": "Baja calidad",
+            "download_partial_success": "Descarga completada con algunos errores",
+            "download_all_failed": "Todos los videos fallaron al descargar",
+            "partial_download_title": "Descarga Completada con Errores",
+            "failed_videos_header": "Los siguientes videos no pudieron descargarse:",
+            "more_failures": "... y {} errores más",
+            "error_private": "Video privado",
+            "error_unavailable": "Video no disponible",
+            "error_not_found": "Video no encontrado",
+            "error_copyright": "Restringido por derechos de autor",
+            "error_geo": "Contenido geo-restringido",
+            "error_age": "Contenido con restricción de edad",
+            "error_unknown": "Error desconocido",
+            "abort_button": "Cancelar",
+            "aborting_button": "Cancelando...",
+            "aborting_status": "Cancelando descarga...",
+            "download_aborted": "Descarga fue cancelada",
+            "download_skipped": "El archivo ya existe, descarga omitida",
+            "download_with_skips": "Descarga completada con archivos omitidos",
+            "download_mixed_results": "Descarga completada con resultados mixtos",
+        },
+        "Français": {
+            "title": "Téléchargeur de Vidéos",
+            "app_title": "Téléchargeur de Vidéos YouTube",
+            "url_label": "Entrez l'URL de la vidéo :",
+            "format_label": "Choisir le format :",
+            "quality_label": "Choisir la qualité vidéo :",
+            "download_button": "Télécharger",
+            "downloading_button": "Téléchargement...",
+            "downloading": "Téléchargement... Veuillez patienter.",
+            "download_complete": "Téléchargement terminé !",
+            "download_failed": "Échec du téléchargement.",
+            "success": "Succès",
+            "error": "Erreur",
+            "url_error": "Veuillez entrer une URL de vidéo.",
+            "download_error": "Impossible de télécharger la vidéo. Vérifiez l'URL ou votre connexion internet.",
+            "paste": "Insérer",
+            "delete": "Supprimer",
+            "playlist_detected": "Playlist détectée",
+            "playlist_question": "Ceci semble être une URL de playlist. Que souhaitez-vous télécharger ?",
+            "download_playlist": "Télécharger la playlist entière",
+            "download_single": "Télécharger une seule vidéo",
+            "quality_best": "Meilleure",
+            "quality_lowest": "Plus faible",
+            "destination_label": "Dossier de téléchargement:",
+            "browse_button": "Parcourir...",
+            "select_destination": "Sélectionner le dossier de téléchargement",
+            "audio_quality_high": "Haute qualité",
+            "audio_quality_medium": "Qualité moyenne",
+            "audio_quality_low": "Basse qualité",
+            "download_partial_success": "Téléchargement terminé avec quelques échecs",
+            "download_all_failed": "Tous les vidéos ont échoué au téléchargement",
+            "partial_download_title": "Téléchargement Terminé avec Erreurs",
+            "failed_videos_header": "Les vidéos suivantes n'ont pas pu être téléchargées:",
+            "more_failures": "... et {} échecs supplémentaires",
+            "error_private": "Vidéo privée",
+            "error_unavailable": "Vidéo indisponible",
+            "error_not_found": "Vidéo non trouvée",
+            "error_copyright": "Restreint par les droits d'auteur",
+            "error_geo": "Contenu géo-restreint",
+            "error_age": "Contenu avec restriction d'âge",
+            "error_unknown": "Erreur inconnue",
+            "abort_button": "Annuler",
+            "aborting_button": "Annulation...",
+            "aborting_status": "Annulation du téléchargement...",
+            "download_aborted": "Le téléchargement a été annulé",
+            "download_skipped": "Le fichier existe déjà, téléchargement ignoré",
+            "download_with_skips": "Téléchargement terminé avec des fichiers ignorés",
+            "download_mixed_results": "Téléchargement terminé avec des résultats mixtes",
+        },
+    }
+    return translations.get(language, translations["English"])
